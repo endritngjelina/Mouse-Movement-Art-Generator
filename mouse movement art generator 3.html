@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Movement Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            color: white;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            cursor: crosshair;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.1) 100%);
+        }
+
+        #artCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .control-item {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #cccccc;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            border-radius: 3px;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #cccccc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .recording-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .mode-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+        }
+
+        .performance-monitor {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            color: white;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            display: none;
+        }
+
+        .trail-preview {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="logo">✨ ArtFlow Studio</div>
+            
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="fluid">Fluid</button>
+                <button class="mode-tab" data-mode="geometric">Geometric</button>
+                <button class="mode-tab" data-mode="particle">Particle</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Brush Settings</h3>
+                <div class="control-item">
+                    <label>Brush Size</label>
+                    <input type="range" id="brushSize" min="1" max="50" value="5">
+                </div>
+                <div class="control-item">
+                    <label>Opacity</label>
+                    <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
+                </div>
+                <div class="control-item">
+                    <label>Speed Sensitivity</label>
+                    <input type="range" id="speedSensitivity" min="0.1" max="3" step="0.1" value="1">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Color Palette</h3>
+                <div class="control-item">
+                    <label>Color Mode</label>
+                    <select id="colorMode">
+                        <option value="speed">Speed-Based</option>
+                        <option value="direction">Direction-Based</option>
+                        <option value="rainbow">Rainbow Flow</option>
+                        <option value="temperature">Temperature</option>
+                        <option value="ocean">Ocean Depths</option>
+                        <option value="sunset">Sunset Glow</option>
+                    </select>
+                </div>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+
+            <div class="control-group">
+                <h3>Effects</h3>
+                <div class="control-item">
+                    <label>Glow Intensity</label>
+                    <input type="range" id="glowIntensity" min="0" max="20" value="5">
+                </div>
+                <div class="control-item">
+                    <label>Trail Length</label>
+                    <input type="range" id="trailLength" min="10" max="200" value="50">
+                </div>
+                <div class="control-item">
+                    <label>Turbulence</label>
+                    <input type="range" id="turbulence" min="0" max="10" value="0">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Actions</h3>
+                <button class="btn btn-primary" id="startRecording">Start Recording</button>
+                <button class="btn btn-secondary" id="clearCanvas">Clear Canvas</button>
+                <button class="btn btn-secondary" id="saveArt">Save as PNG</button>
+                <button class="btn btn-secondary" id="saveSVG">Save as SVG</button>
+                <button class="btn btn-secondary" id="togglePerformance">Performance Monitor</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="strokeCount">0</div>
+                    <div class="stat-label">Strokes</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="avgSpeed">0</div>
+                    <div class="stat-label">Avg Speed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="totalDistance">0</div>
+                    <div class="stat-label">Distance</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="artTime">0s</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="artCanvas"></canvas>
+            <div class="recording-indicator" id="recordingIndicator">● RECORDING</div>
+            <div class="performance-monitor" id="performanceMonitor">
+                <div>FPS: <span id="fps">60</span></div>
+                <div>Points: <span id="pointCount">0</span></div>
+                <div>Memory: <span id="memoryUsage">0MB</span></div>
+            </div>
+            <canvas class="trail-preview" id="trailPreview"></canvas>
+        </div>
+    </div>
+
+    <script>
+        class MouseArtGenerator {
+            constructor() {
+                this.canvas = document.getElementById('artCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isRecording = false;
+                this.points = [];
+                this.settings = {
+                    brushSize: 5,
+                    opacity: 0.8,
+                    speedSensitivity: 1,
+                    colorMode: 'speed',
+                    glowIntensity: 5,
+                    trailLength: 50,
+                    turbulence: 0,
+                    mode: 'fluid'
+                };
+                this.stats = {
+                    strokeCount: 0,
+                    totalDistance: 0,
+                    startTime: 0,
+                    speeds: []
+                };
+                this.lastPoint = null;
+                this.animationFrame = null;
+                this.particles = [];
+                this.performanceMetrics = {
+                    fps: 60,
+                    frameCount: 0,
+                    lastTime: 0
+                };
+                
+                this.initCanvas();
+                this.bindEvents();
+                this.initColorPalettes();
+                this.startPerformanceMonitoring();
+            }
+
+            initCanvas() {
+                this.resizeCanvas();
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+                this.ctx.globalCompositeOperation = 'source-over';
+                
+                // Set up canvas styling
+                this.canvas.style.background = 'transparent';
+            }
+
+            resizeCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * devicePixelRatio;
+                this.canvas.height = rect.height * devicePixelRatio;
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+            }
+
+            bindEvents() {
+                // Canvas events
+                this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
+                this.canvas.addEventListener('mousemove', this.draw.bind(this));
+                this.canvas.addEventListener('mouseup', this.stopDrawing.bind(this));
+                this.canvas.addEventListener('mouseleave', this.stopDrawing.bind(this));
+
+                // Touch events for mobile
+                this.canvas.addEventListener('touchstart', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchmove', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
+
+                // Control events
+                document.getElementById('startRecording').addEventListener('click', this.toggleRecording.bind(this));
+                document.getElementById('clearCanvas').addEventListener('click', this.clearCanvas.bind(this));
+                document.getElementById('saveArt').addEventListener('click', this.saveAsPNG.bind(this));
+                document.getElementById('saveSVG').addEventListener('click', this.saveAsSVG.bind(this));
+                document.getElementById('togglePerformance').addEventListener('click', this.togglePerformanceMonitor.bind(this));
+
+                // Settings
+                ['brushSize', 'opacity', 'speedSensitivity', 'glowIntensity', 'trailLength', 'turbulence'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        this.settings[id] = parseFloat(e.target.value);
+                    });
+                });
+
+                document.getElementById('colorMode').addEventListener('change', (e) => {
+                    this.settings.colorMode = e.target.value;
+                    this.updateColorPalette();
+                });
+
+                // Mode tabs
+                document.querySelectorAll('.mode-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.settings.mode = e.target.dataset.mode;
+                    });
+                });
+
+                // Window resize
+                window.addEventListener('resize', this.resizeCanvas.bind(this));
+            }
+
+            initColorPalettes() {
+                this.colorPalettes = {
+                    speed: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'],
+                    direction: ['#ee5a6f', '#60a3d9', '#bf93d1', '#42d692', '#feb144'],
+                    rainbow: ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ff00', '#00ff80', '#00ffff', '#0080ff'],
+                    temperature: ['#0066cc', '#0099ff', '#00ccff', '#ffcc00', '#ff9900', '#ff6600', '#ff0000'],
+                    ocean: ['#003366', '#0066cc', '#0099ff', '#00ccff', '#66ffff'],
+                    sunset: ['#ff6b35', '#f7931e', '#ffd23f', '#ff595e', '#ff8a80']
+                };
+                this.updateColorPalette();
+            }
+
+            updateColorPalette() {
+                const palette = document.getElementById('colorPalette');
+                palette.innerHTML = '';
+                const colors = this.colorPalettes[this.settings.colorMode] || this.colorPalettes.speed;
+                
+                colors.forEach(color => {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'color-swatch';
+                    swatch.style.background = color;
+                    palette.appendChild(swatch);
+                });
+            }
+
+            handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                this.canvas.dispatchEvent(mouseEvent);
+            }
+
+            toggleRecording() {
+                this.isRecording = !this.isRecording;
+                const btn = document.getElementById('startRecording');
+                const indicator = document.getElementById('recordingIndicator');
+                
+                if (this.isRecording) {
+                    btn.textContent = 'Stop Recording';
+                    btn.className = 'btn btn-secondary';
+                    indicator.style.display = 'block';
+                    this.stats.startTime = Date.now();
+                    this.stats.strokeCount = 0;
+                    this.stats.totalDistance = 0;
+                    this.stats.speeds = [];
+                } else {
+                    btn.textContent = 'Start Recording';
+                    btn.className = 'btn btn-primary';
+                    indicator.style.display = 'none';
+                }
+            }
+
+            startDrawing(e) {
+                if (!this.isRecording) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastPoint = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                    time: Date.now()
+                };
+                this.stats.strokeCount++;
+                this.updateStats();
+            }
+
+            draw(e) {
+                if (!this.isRecording || !this.lastPoint) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const currentPoint = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                    time: Date.now()
+                };
+
+                const distance = Math.sqrt(
+                    Math.pow(currentPoint.x - this.lastPoint.x, 2) + 
+                    Math.pow(currentPoint.y - this.lastPoint.y, 2)
+                );
+                
+                const timeDiff = currentPoint.time - this.lastPoint.time;
+                const speed = timeDiff > 0 ? distance / timeDiff : 0;
+                
+                this.stats.totalDistance += distance;
+                this.stats.speeds.push(speed);
+
+                // Apply turbulence
+                if (this.settings.turbulence > 0) {
+                    currentPoint.x += (Math.random() - 0.5) * this.settings.turbulence;
+                    currentPoint.y += (Math.random() - 0.5) * this.settings.turbulence;
+                }
+
+                this.renderStroke(this.lastPoint, currentPoint, speed, distance);
+                
+                if (this.settings.mode === 'particle') {
+                    this.createParticles(currentPoint, speed);
+                }
+
+                this.points.push({...currentPoint, speed, distance});
+                this.lastPoint = currentPoint;
+                
+                // Limit points for performance
+                if (this.points.length > this.settings.trailLength) {
+                    this.points.shift();
+                }
+
+                this.updateStats();
+            }
+
+            renderStroke(from, to, speed, distance) {
+                const color = this.getColor(speed, to);
+                const size = this.getBrushSize(speed);
+                
+                this.ctx.save();
+                
+                switch (this.settings.mode) {
+                    case 'fluid':
+                        this.renderFluidStroke(from, to, color, size);
+                        break;
+                    case 'geometric':
+                        this.renderGeometricStroke(from, to, color, size, speed);
+                        break;
+                    case 'particle':
+                        this.renderParticleStroke(from, to, color, size);
+                        break;
+                }
+                
+                this.ctx.restore();
+            }
+
+            renderFluidStroke(from, to, color, size) {
+                // Apply glow effect
+                if (this.settings.glowIntensity > 0) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = this.settings.glowIntensity;
+                }
+                
+                this.ctx.globalAlpha = this.settings.opacity;
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = size;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(from.x, from.y);
+                this.ctx.lineTo(to.x, to.y);
+                this.ctx.stroke();
+            }
+
+            renderGeometricStroke(from, to, color, size, speed) {
+                this.ctx.globalAlpha = this.settings.opacity;
+                this.ctx.fillStyle = color;
+                
+                const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                const shapes = ['circle', 'square', 'triangle'];
+                const shape = shapes[Math.floor(speed * 10) % shapes.length];
+                
+                switch (shape) {
+                    case 'circle':
+                        this.ctx.beginPath();
+                        this.ctx.arc(to.x, to.y, size / 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        break;
+                    case 'square':
+                        this.ctx.save();
+                        this.ctx.translate(to.x, to.y);
+                        this.ctx.rotate(angle);
+                        this.ctx.fillRect(-size/2, -size/2, size, size);
+                        this.ctx.restore();
+                        break;
+                    case 'triangle':
+                        this.ctx.save();
+                        this.ctx.translate(to.x, to.y);
+                        this.ctx.rotate(angle);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, -size/2);
+                        this.ctx.lineTo(-size/2, size/2);
+                        this.ctx.lineTo(size/2, size/2);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        this.ctx.restore();
+                        break;
+                }
+            }
+
+            renderParticleStroke(from, to, color, size) {
+                this.ctx.globalAlpha = this.settings.opacity * 0.6;
+                this.ctx.fillStyle = color;
+                
+                for (let i = 0; i < 3; i++) {
+                    const offsetX = (Math.random() - 0.5) * size;
+                    const offsetY = (Math.random() - 0.5) * size;
+                    const particleSize = Math.random() * size * 0.5;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(to.x + offsetX, to.y + offsetY, particleSize, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
+            createParticles(point, speed) {
+                for (let i = 0; i < Math.floor(speed * 5); i++) {
+                    this.particles.push({
+                        x: point.x + (Math.random() - 0.5) * 20,
+                        y: point.y + (Math.random() - 0.5) * 20,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        life: 1,
+                        decay: 0.02,
+                        size: Math.random() * 3 + 1,
+                        color: this.getColor(speed, point)
+                    });
+                }
+            }
+
+            updateParticles() {
+                this.particles = this.particles.filter(particle => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.life -= particle.decay;
+                    particle.vy += 0.1; // gravity
+                    
+                    if (particle.life > 0) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = particle.life * this.settings.opacity;
+                        this.ctx.fillStyle = particle.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.restore();
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            getColor(speed, point) {
+                const colors = this.colorPalettes[this.settings.colorMode];
+                
+                switch (this.settings.colorMode) {
+                    case 'speed':
+                        const speedIndex = Math.min(Math.floor(speed * this.settings.speedSensitivity * colors.length), colors.length - 1);
+                        return colors[speedIndex];
+                    
+                    case 'direction':
+                        const angle = this.lastPoint ? Math.atan2(point.y - this.lastPoint.y, point.x - this.lastPoint.x) : 0;
+                        const dirIndex = Math.floor(((angle + Math.PI) / (2 * Math.PI)) * colors.length) % colors.length;
+                        return colors[dirIndex];
+                    
+                    case 'rainbow':
+                        const time = Date.now() * 0.001;
+                        const rainbowIndex = Math.floor((Math.sin(time) + 1) * 0.5 * colors.length) % colors.length;
+                        return colors[rainbowIndex];
+                    
+                    default:
+                        return colors[Math.floor(Math.random() * colors.length)];
+                }
+            }
+
+            getBrushSize(speed) {
+                const baseSize = this.settings.brushSize;
+                const speedMultiplier = 1 + (speed * this.settings.speedSensitivity * 0.5);
+                return Math.max(1, Math.min(baseSize * speedMultiplier, 50));
+            }
+
+            stopDrawing() {
+                this.lastPoint = null;
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.points = [];
+                this.particles = [];
+                this.stats = {
+                    strokeCount: 0,
+                    totalDistance: 0,
+                    startTime: Date.now(),
+                    speeds: []
+                };
+                this.updateStats();
+            }
+
+            saveAsPNG() {
+                const link = document.createElement('a');
+                link.download = `mouse-art-${Date.now()}.png`;
+                link.href = this.canvas.toDataURL();
+                link.click();
+            }
+
+            saveAsSVG() {
+                // Create SVG representation of the artwork
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', this.canvas.width);
+                svg.setAttribute('height', this.canvas.height);
+                svg.setAttribute('viewBox', `0 0 ${this.canvas.width} ${this.canvas.height}`);
+                
+                // Convert canvas paths to SVG
+                let pathData = '';
+                this.points.forEach((point, index) => {
+                    if (index === 0) {
+                        pathData += `M ${point.x} ${point.y} `;
+                    } else {
+                        pathData += `L ${point.x} ${point.y} `;
+                    }
+                });
+                
+                if (pathData) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', pathData);
+                    path.setAttribute('stroke', '#4ecdc4');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+                    svg.appendChild(path);
+                }
+                
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const blob = new Blob([svgData], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.download = `mouse-art-${Date.now()}.svg`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            }
+
+            updateStats() {
+                document.getElementById('strokeCount').textContent = this.stats.strokeCount;
+                document.getElementById('totalDistance').textContent = Math.round(this.stats.totalDistance);
+                
+                const avgSpeed = this.stats.speeds.length > 0 ? 
+                    this.stats.speeds.reduce((a, b) => a + b, 0) / this.stats.speeds.length : 0;
+                document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(1);
+                
+                const elapsed = this.stats.startTime ? (Date.now() - this.stats.startTime) / 1000 : 0;
+                document.getElementById('artTime').textContent = elapsed.toFixed(0) + 's';
+            }
+
+            startPerformanceMonitoring() {
+                const monitor = () => {
+                    const now = performance.now();
+                    this.performanceMetrics.frameCount++;
+                    
+                    if (now - this.performanceMetrics.lastTime >= 1000) {
+                        this.performanceMetrics.fps = Math.round(
+                            this.performanceMetrics.frameCount * 1000 / (now - this.performanceMetrics.lastTime)
+                        );
+                        this.performanceMetrics.frameCount = 0;
+                        this.performanceMetrics.lastTime = now;
+                        
+                        // Update performance display
+                        document.getElementById('fps').textContent = this.performanceMetrics.fps;
+                        document.getElementById('pointCount').textContent = this.points.length;
+                        
+                        // Estimate memory usage
+                        const memoryMB = (this.points.length * 32 + this.particles.length * 48) / 1024 / 1024;
+                        document.getElementById('memoryUsage').textContent = memoryMB.toFixed(1) + 'MB';
+                    }
+                    
+                    // Update particles if in particle mode
+                    if (this.settings.mode === 'particle') {
+                        this.updateParticles();
+                    }
+                    
+                    requestAnimationFrame(monitor);
+                };
+                
+                monitor();
+            }
+
+            togglePerformanceMonitor() {
+                const monitor = document.getElementById('performanceMonitor');
+                monitor.style.display = monitor.style.display === 'none' ? 'block' : 'none';
+            }
+
+            // Advanced features
+            exportConfiguration() {
+                return {
+                    settings: this.settings,
+                    points: this.points.slice(),
+                    timestamp: Date.now()
+                };
+            }
+
+            importConfiguration(config) {
+                this.settings = { ...this.settings, ...config.settings };
+                this.points = config.points || [];
+                
+                // Update UI controls
+                Object.keys(this.settings).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = this.settings[key];
+                    }
+                });
+                
+                this.redrawCanvas();
+            }
+
+            redrawCanvas() {
+                this.clearCanvas();
+                
+                // Redraw all points
+                for (let i = 1; i < this.points.length; i++) {
+                    const prev = this.points[i - 1];
+                    const curr = this.points[i];
+                    this.renderStroke(prev, curr, curr.speed || 1, curr.distance || 1);
+                }
+            }
+
+            // Auto-save functionality
+            setupAutoSave() {
+                setInterval(() => {
+                    if (this.points.length > 0) {
+                        const config = this.exportConfiguration();
+                        // Store in memory instead of localStorage
+                        this.lastAutoSave = config;
+                    }
+                }, 30000); // Auto-save every 30 seconds
+            }
+
+            // Advanced brush dynamics
+            updateBrushDynamics() {
+                // Pressure simulation based on speed
+                const pressureSimulation = this.stats.speeds.slice(-5).reduce((a, b) => a + b, 0) / 5;
+                
+                // Dynamic opacity based on pressure
+                const dynamicOpacity = Math.max(0.1, Math.min(1, this.settings.opacity * (0.5 + pressureSimulation)));
+                
+                // Dynamic size based on acceleration
+                const acceleration = this.stats.speeds.length > 1 ? 
+                    Math.abs(this.stats.speeds[this.stats.speeds.length - 1] - this.stats.speeds[this.stats.speeds.length - 2]) : 0;
+                
+                return {
+                    opacity: dynamicOpacity,
+                    size: this.settings.brushSize * (1 + acceleration * 0.1),
+                    pressure: pressureSimulation
+                };
+            }
+
+            // Gesture recognition
+            analyzeGesture() {
+                if (this.points.length < 10) return null;
+                
+                const recentPoints = this.points.slice(-10);
+                const totalAngleChange = recentPoints.reduce((total, point, index) => {
+                    if (index === 0) return 0;
+                    const prev = recentPoints[index - 1];
+                    const angle = Math.atan2(point.y - prev.y, point.x - prev.x);
+                    const prevAngle = index > 1 ? Math.atan2(prev.y - recentPoints[index - 2].y, prev.x - recentPoints[index - 2].x) : angle;
+                    return total + Math.abs(angle - prevAngle);
+                }, 0);
+                
+                // Classify gesture
+                if (totalAngleChange > Math.PI * 2) return 'spiral';
+                if (totalAngleChange > Math.PI) return 'curve';
+                if (totalAngleChange < 0.5) return 'straight';
+                return 'irregular';
+            }
+
+            // Dynamic color temperature based on gesture
+            getTemperatureColor(gesture, speed) {
+                const baseColors = this.colorPalettes[this.settings.colorMode];
+                
+                switch (gesture) {
+                    case 'spiral':
+                        return baseColors[Math.floor(Math.random() * baseColors.length)]; // Random vibrant
+                    case 'straight':
+                        return baseColors[0]; // Cool colors
+                    case 'curve':
+                        return baseColors[Math.floor(baseColors.length / 2)]; // Mid-tone
+                    default:
+                        return baseColors[Math.min(Math.floor(speed * baseColors.length), baseColors.length - 1)];
+                }
+            }
+
+            // Initialize advanced features
+            initAdvancedFeatures() {
+                this.setupAutoSave();
+                
+                // Add keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 's':
+                                e.preventDefault();
+                                this.saveAsPNG();
+                                break;
+                            case 'z':
+                                e.preventDefault();
+                                this.undo();
+                                break;
+                            case ' ':
+                                e.preventDefault();
+                                this.toggleRecording();
+                                break;
+                        }
+                    }
+                });
+
+                // Add undo functionality
+                this.undoStack = [];
+                this.maxUndoSteps = 20;
+            }
+
+            undo() {
+                if (this.undoStack.length > 0) {
+                    const previousState = this.undoStack.pop();
+                    this.points = previousState.points;
+                    this.stats = previousState.stats;
+                    this.redrawCanvas();
+                    this.updateStats();
+                }
+            }
+
+            saveState() {
+                this.undoStack.push({
+                    points: [...this.points],
+                    stats: { ...this.stats }
+                });
+                
+                // Limit undo stack size
+                if (this.undoStack.length > this.maxUndoSteps) {
+                    this.undoStack.shift();
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            const artGenerator = new MouseArtGenerator();
+            artGenerator.initAdvancedFeatures();
+            
+            // Add some visual feedback
+            console.log('🎨 Mouse Art Generator initialized');
+            console.log('💡 Pro tip: Use Ctrl+S to save, Ctrl+Z to undo, Space to toggle recording');
+        });
+
+        // Add some CSS animations for enhanced UX
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(-100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .sidebar {
+                animation: slideIn 0.5s ease-out;
+            }
+            
+            .canvas-container {
+                animation: fadeIn 0.8s ease-out;
+            }
+            
+            .btn:active {
+                transform: translateY(1px) scale(0.98);
+            }
+            
+            .control-group:hover {
+                background: rgba(255, 255, 255, 0.08);
+                transform: translateY(-1px);
+                transition: all 0.3s ease;
+            }
+            
+            @media (max-width: 768px) {
+                .app-container {
+                    flex-direction: column;
+                }
+                
+                .sidebar {
+                    width: 100%;
+                    height: auto;
+                    max-height: 40vh;
+                    overflow-y: auto;
+                }
+                
+                .canvas-container {
+                    flex: 1;
+                    min-height: 60vh;
+                }
+                
+                .control-group {
+                    margin-bottom: 15px;
+                    padding: 12px;
+                }
+                
+                .stats {
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 5px;
+                }
+                
+                .mode-tabs {
+                    margin-bottom: 15px;
+                }
+                
+                .mode-tab {
+                    padding: 8px;
+                    font-size: 11px;
+                }
+            }
+            
+            /* High DPI display optimizations */
+            @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+                .sidebar {
+                    backdrop-filter: blur(30px);
+                }
+                
+                .control-group {
+                    backdrop-filter: blur(10px);
+                }
+            }
+            
+            /* Accessibility improvements */
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+                
+                .recording-indicator {
+                    animation: none;
+                }
+            }
+            
+            /* Dark mode enhancements */
+            @media (prefers-color-scheme: dark) {
+                .sidebar {
+                    background: rgba(0, 0, 0, 0.9);
+                }
+                
+                .control-group {
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
