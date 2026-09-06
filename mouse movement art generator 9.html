@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Movement Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            cursor: crosshair;
+            background: radial-gradient(circle at 30% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 10%, rgba(255, 75, 178, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(120, 255, 214, 0.1) 0%, transparent 50%);
+            transition: filter 0.3s ease;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .control-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-color: transparent;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .action-btn.clear {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .action-btn.save {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4ecdc4;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .color-picker {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .effects-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .effects-toggle.active {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #4ecdc4;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .performance-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .fps {
+            color: #4ecdc4;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .recording {
+            animation: pulse 1s infinite;
+        }
+
+        .fullscreen-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .fullscreen-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="header">
+                <div class="logo">ArtFlow</div>
+                <button class="toggle-btn" id="toggleSidebar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">Art Modes</div>
+                <div class="mode-grid">
+                    <button class="mode-btn active" data-mode="flow">Flow Lines</button>
+                    <button class="mode-btn" data-mode="particles">Particles</button>
+                    <button class="mode-btn" data-mode="spiral">Spiral Art</button>
+                    <button class="mode-btn" data-mode="neural">Neural Web</button>
+                    <button class="mode-btn" data-mode="galaxy">Galaxy</button>
+                    <button class="mode-btn" data-mode="lightning">Lightning</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">Visual Controls</div>
+                <div class="control-group">
+                    <label class="control-label">Brush Size</label>
+                    <input type="range" class="slider" id="brushSize" min="1" max="50" value="5">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Speed Sensitivity</label>
+                    <input type="range" class="slider" id="speedSensitivity" min="0.1" max="5" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Trail Length</label>
+                    <input type="range" class="slider" id="trailLength" min="10" max="200" value="50">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Color Shift Speed</label>
+                    <input type="range" class="slider" id="colorShiftSpeed" min="0" max="10" value="2">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">Effects</div>
+                <div class="effects-toggle" id="glowToggle">
+                    <span>Glow Effect</span>
+                    <div class="toggle-switch active"></div>
+                </div>
+                <div class="effects-toggle" id="blurToggle">
+                    <span>Motion Blur</span>
+                    <div class="toggle-switch"></div>
+                </div>
+                <div class="effects-toggle" id="rainbowToggle">
+                    <span>Rainbow Mode</span>
+                    <div class="toggle-switch active"></div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-title">Actions</div>
+                <div class="action-buttons">
+                    <button class="action-btn clear" id="clearCanvas">Clear</button>
+                    <button class="action-btn save" id="saveImage">Save</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-value" id="strokeCount">0</span>
+                        <span class="stat-label">Strokes</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="distance">0</span>
+                        <span class="stat-label">Distance</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="performance-indicator">
+                <span class="fps" id="fps">60 FPS</span>
+            </div>
+            <button class="fullscreen-toggle" id="fullscreenBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7H14v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class MouseArtGenerator {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isDrawing = false;
+                this.lastPos = { x: 0, y: 0 };
+                this.currentMode = 'flow';
+                this.particles = [];
+                this.trails = [];
+                this.frameCount = 0;
+                this.stats = { strokes: 0, distance: 0 };
+                this.lastTime = 0;
+                this.fps = 60;
+                
+                // Settings
+                this.settings = {
+                    brushSize: 5,
+                    speedSensitivity: 1,
+                    trailLength: 50,
+                    colorShiftSpeed: 2,
+                    glowEffect: true,
+                    motionBlur: false,
+                    rainbowMode: true
+                };
+
+                this.init();
+                this.setupEventListeners();
+                this.animate();
+            }
+
+            init() {
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            resizeCanvas() {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+            }
+
+            setupEventListeners() {
+                // Mouse events
+                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+
+                // Touch events for mobile
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousedown', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.canvas.dispatchEvent(mouseEvent);
+                });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.canvas.dispatchEvent(mouseEvent);
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const mouseEvent = new MouseEvent('mouseup', {});
+                    this.canvas.dispatchEvent(mouseEvent);
+                });
+
+                // UI Controls
+                this.setupUIControls();
+            }
+
+            setupUIControls() {
+                // Mode buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelector('.mode-btn.active').classList.remove('active');
+                        btn.classList.add('active');
+                        this.currentMode = btn.dataset.mode;
+                    });
+                });
+
+                // Sliders
+                document.getElementById('brushSize').addEventListener('input', (e) => {
+                    this.settings.brushSize = parseFloat(e.target.value);
+                });
+
+                document.getElementById('speedSensitivity').addEventListener('input', (e) => {
+                    this.settings.speedSensitivity = parseFloat(e.target.value);
+                });
+
+                document.getElementById('trailLength').addEventListener('input', (e) => {
+                    this.settings.trailLength = parseInt(e.target.value);
+                });
+
+                document.getElementById('colorShiftSpeed').addEventListener('input', (e) => {
+                    this.settings.colorShiftSpeed = parseFloat(e.target.value);
+                });
+
+                // Effect toggles
+                document.getElementById('glowToggle').addEventListener('click', () => {
+                    this.toggleEffect('glowEffect', 'glowToggle');
+                });
+
+                document.getElementById('blurToggle').addEventListener('click', () => {
+                    this.toggleEffect('motionBlur', 'blurToggle');
+                });
+
+                document.getElementById('rainbowToggle').addEventListener('click', () => {
+                    this.toggleEffect('rainbowMode', 'rainbowToggle');
+                });
+
+                // Action buttons
+                document.getElementById('clearCanvas').addEventListener('click', () => {
+                    this.clearCanvas();
+                });
+
+                document.getElementById('saveImage').addEventListener('click', () => {
+                    this.saveImage();
+                });
+
+                // Sidebar toggle
+                document.getElementById('toggleSidebar').addEventListener('click', () => {
+                    document.getElementById('sidebar').classList.toggle('collapsed');
+                });
+
+                // Fullscreen toggle
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                });
+            }
+
+            toggleEffect(setting, elementId) {
+                this.settings[setting] = !this.settings[setting];
+                const element = document.getElementById(elementId);
+                const toggle = element.querySelector('.toggle-switch');
+                
+                element.classList.toggle('active');
+                toggle.classList.toggle('active');
+            }
+
+            startDrawing(e) {
+                this.isDrawing = true;
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                this.stats.strokes++;
+                this.updateStats();
+            }
+
+            draw(e) {
+                if (!this.isDrawing) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const currentPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+
+                const distance = Math.sqrt(
+                    Math.pow(currentPos.x - this.lastPos.x, 2) + 
+                    Math.pow(currentPos.y - this.lastPos.y, 2)
+                );
+
+                const speed = distance * this.settings.speedSensitivity;
+                this.stats.distance += distance;
+
+                switch (this.currentMode) {
+                    case 'flow':
+                        this.drawFlow(currentPos, speed);
+                        break;
+                    case 'particles':
+                        this.createParticles(currentPos, speed);
+                        break;
+                    case 'spiral':
+                        this.drawSpiral(currentPos, speed);
+                        break;
+                    case 'neural':
+                        this.drawNeural(currentPos, speed);
+                        break;
+                    case 'galaxy':
+                        this.drawGalaxy(currentPos, speed);
+                        break;
+                    case 'lightning':
+                        this.drawLightning(currentPos, speed);
+                        break;
+                }
+
+                this.lastPos = currentPos;
+                this.updateStats();
+            }
+
+            stopDrawing() {
+                this.isDrawing = false;
+            }
+
+            drawFlow(pos, speed) {
+                const color = this.getColor();
+                const size = Math.max(1, this.settings.brushSize * (speed / 10));
+
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.8;
+                
+                if (this.settings.glowEffect) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = size * 2;
+                }
+
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = size;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastPos.x, this.lastPos.y);
+                this.ctx.lineTo(pos.x, pos.y);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+
+                // Add trail effect
+                this.trails.push({
+                    x: pos.x,
+                    y: pos.y,
+                    size: size,
+                    color: color,
+                    life: this.settings.trailLength
+                });
+            }
+
+            createParticles(pos, speed) {
+                const particleCount = Math.floor(speed / 2) + 1;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: pos.x + (Math.random() - 0.5) * 20,
+                        y: pos.y + (Math.random() - 0.5) * 20,
+                        vx: (Math.random() - 0.5) * speed * 0.1,
+                        vy: (Math.random() - 0.5) * speed * 0.1,
+                        size: Math.random() * this.settings.brushSize + 1,
+                        color: this.getColor(),
+                        life: 1,
+                        decay: 0.01 + Math.random() * 0.02
+                    });
+                }
+            }
+
+            drawSpiral(pos, speed) {
+                const color = this.getColor();
+                const radius = this.settings.brushSize * (speed / 5);
+                const turns = 3;
+
+                this.ctx.save();
+                this.ctx.translate(pos.x, pos.y);
+                
+                if (this.settings.glowEffect) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 10;
+                }
+
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 2;
+
+                this.ctx.beginPath();
+                for (let angle = 0; angle < Math.PI * 2 * turns; angle += 0.1) {
+                    const r = radius * (angle / (Math.PI * 2 * turns));
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    
+                    if (angle === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+            }
+
+            drawNeural(pos, speed) {
+                const color = this.getColor();
+                const nodeCount = Math.floor(speed / 3) + 2;
+
+                this.ctx.save();
+                
+                if (this.settings.glowEffect) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 5;
+                }
+
+                // Draw connections
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 1;
+                this.ctx.globalAlpha = 0.6;
+
+                for (let i = 0; i < nodeCount; i++) {
+                    const angle = (Math.PI * 2 * i) / nodeCount;
+                    const radius = this.settings.brushSize * 3;
+                    const nodeX = pos.x + Math.cos(angle) * radius;
+                    const nodeY = pos.y + Math.sin(angle) * radius;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(pos.x, pos.y);
+                    this.ctx.lineTo(nodeX, nodeY);
+                    this.ctx.stroke();
+
+                    // Draw node
+                    this.ctx.fillStyle = color;
+                    this.ctx.globalAlpha = 0.8;
+                    this.ctx.beginPath();
+                    this.ctx.arc(nodeX, nodeY, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+
+                this.ctx.restore();
+            }
+
+            drawGalaxy(pos, speed) {
+                const color = this.getColor();
+                const armCount = 5;
+                const radius = this.settings.brushSize * 2;
+
+                this.ctx.save();
+                this.ctx.translate(pos.x, pos.y);
+                
+                if (this.settings.glowEffect) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 15;
+                }
+
+                for (let arm = 0; arm < armCount; arm++) {
+                    const armAngle = (Math.PI * 2 * arm) / armCount;
+                    
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.globalAlpha = 0.7;
+
+                    this.ctx.beginPath();
+                    for (let t = 0; t < Math.PI * 4; t += 0.1) {
+                        const r = radius * t / (Math.PI * 4);
+                        const angle = armAngle + t;
+                        const x = Math.cos(angle) * r;
+                        const y = Math.sin(angle) * r;
+                        
+                        if (t === 0) {
+                            this.ctx.moveTo(x, y);
+                        } else {
+                            this.ctx.lineTo(x, y);
+                        }
+                    }
+                    this.ctx.stroke();
+                }
+
+                this.ctx.restore();
+            }
+
+            drawLightning(pos, speed) {
+                const color = this.getColor();
+                const branches = Math.floor(speed / 5) + 1;
+
+                this.ctx.save();
+                
+                if (this.settings.glowEffect) {
+                    this.ctx.shadowColor = color;
+                    this.ctx.shadowBlur = 20;
+                }
+
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 3;
+                this.ctx.globalAlpha = 0.9;
+
+                for (let i = 0; i < branches; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const length = this.settings.brushSize * 10;
+                    
+                    let currentX = pos.x;
+                    let currentY = pos.y;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(currentX, currentY);
+
+                    const segments = 8;
+                    for (let j = 0; j < segments; j++) {
+                        const segmentLength = length / segments;
+                        const randomAngle = angle + (Math.random() - 0.5) * Math.PI / 3;
+                        
+                        currentX += Math.cos(randomAngle) * segmentLength;
+                        currentY += Math.sin(randomAngle) * segmentLength;
+                        
+                        this.ctx.lineTo(currentX, currentY);
+                    }
+                    
+                    this.ctx.stroke();
+                }
+
+                this.ctx.restore();
+            }
+
+            getColor() {
+                if (this.settings.rainbowMode) {
+                    const hue = (this.frameCount * this.settings.colorShiftSpeed) % 360;
+                    return `hsl(${hue}, 70%, 60%)`;
+                } else {
+                    return '#4ecdc4';
+                }
+            }
+
+            animate() {
+                const currentTime = performance.now();
+                const deltaTime = currentTime - this.lastTime;
+                
+                if (deltaTime >= 16.67) { // ~60 FPS
+                    this.fps = Math.round(1000 / deltaTime);
+                    document.getElementById('fps').textContent = `${this.fps} FPS`;
+                    this.lastTime = currentTime;
+                }
+
+                // Apply motion blur effect
+                if (this.settings.motionBlur) {
+                    this.ctx.globalAlpha = 0.95;
+                    this.ctx.fillStyle = 'rgba(15, 15, 35, 0.05)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.globalAlpha = 1;
+                }
+
+                // Update and draw particles
+                this.updateParticles();
+                
+                // Update and draw trails
+                this.updateTrails();
+
+                this.frameCount++;
+                requestAnimationFrame(() => this.animate());
+            }
+
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    // Apply gravity and friction
+                    particle.vy += 0.1;
+                    particle.vx *= 0.99;
+                    particle.vy *= 0.99;
+                    
+                    // Update life
+                    particle.life -= particle.decay;
+                    
+                    // Draw particle
+                    if (particle.life > 0) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = particle.life;
+                        
+                        if (this.settings.glowEffect) {
+                            this.ctx.shadowColor = particle.color;
+                            this.ctx.shadowBlur = particle.size * 2;
+                        }
+                        
+                        this.ctx.fillStyle = particle.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.restore();
+                    } else {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            updateTrails() {
+                for (let i = this.trails.length - 1; i >= 0; i--) {
+                    const trail = this.trails[i];
+                    trail.life--;
+                    
+                    if (trail.life > 0) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = trail.life / this.settings.trailLength;
+                        
+                        if (this.settings.glowEffect) {
+                            this.ctx.shadowColor = trail.color;
+                            this.ctx.shadowBlur = trail.size;
+                        }
+                        
+                        this.ctx.fillStyle = trail.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(trail.x, trail.y, trail.size * 0.3, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.restore();
+                    } else {
+                        this.trails.splice(i, 1);
+                    }
+                }
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.particles = [];
+                this.trails = [];
+                this.stats = { strokes: 0, distance: 0 };
+                this.updateStats();
+            }
+
+            saveImage() {
+                // Create a temporary canvas with white background
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                
+                // Fill with white background
+                tempCtx.fillStyle = '#ffffff';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Draw the art on top
+                tempCtx.drawImage(this.canvas, 0, 0);
+                
+                // Create download link
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                link.download = `mouse-art-${timestamp}.png`;
+                link.href = tempCanvas.toDataURL();
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show feedback
+                this.showFeedback('Image saved successfully!');
+            }
+
+            showFeedback(message) {
+                const feedback = document.createElement('div');
+                feedback.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(76, 175, 80, 0.9);
+                    color: white;
+                    padding: 16px 32px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    z-index: 1000;
+                    backdrop-filter: blur(10px);
+                    animation: fadeInOut 2s ease-in-out;
+                `;
+                
+                feedback.textContent = message;
+                document.body.appendChild(feedback);
+                
+                setTimeout(() => {
+                    document.body.removeChild(feedback);
+                }, 2000);
+            }
+
+            updateStats() {
+                document.getElementById('strokeCount').textContent = this.stats.strokes;
+                document.getElementById('distance').textContent = Math.round(this.stats.distance);
+            }
+
+            // Keyboard shortcuts
+            handleKeyboard() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 's':
+                                e.preventDefault();
+                                this.saveImage();
+                                break;
+                            case 'z':
+                                e.preventDefault();
+                                this.clearCanvas();
+                                break;
+                        }
+                    }
+                    
+                    switch (e.key) {
+                        case 'Escape':
+                            if (document.fullscreenElement) {
+                                document.exitFullscreen();
+                            }
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            this.clearCanvas();
+                            break;
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                            const modes = ['flow', 'particles', 'spiral', 'neural', 'galaxy', 'lightning'];
+                            const modeIndex = parseInt(e.key) - 1;
+                            if (modes[modeIndex]) {
+                                this.currentMode = modes[modeIndex];
+                                document.querySelector('.mode-btn.active').classList.remove('active');
+                                document.querySelector(`[data-mode="${modes[modeIndex]}"]`).classList.add('active');
+                            }
+                            break;
+                    }
+                });
+            }
+
+            // Performance monitoring
+            startPerformanceMonitoring() {
+                setInterval(() => {
+                    const particleCount = this.particles.length;
+                    const trailCount = this.trails.length;
+                    
+                    // Limit particles for performance
+                    if (particleCount > 1000) {
+                        this.particles = this.particles.slice(-500);
+                    }
+                    
+                    // Limit trails for performance
+                    if (trailCount > 2000) {
+                        this.trails = this.trails.slice(-1000);
+                    }
+                    
+                    // Update performance indicator color based on FPS
+                    const fpsElement = document.getElementById('fps');
+                    if (this.fps > 50) {
+                        fpsElement.style.color = '#4ecdc4';
+                    } else if (this.fps > 30) {
+                        fpsElement.style.color = '#ffeb3b';
+                    } else {
+                        fpsElement.style.color = '#ff6b6b';
+                    }
+                }, 1000);
+            }
+
+            // Initialize advanced features
+            initAdvancedFeatures() {
+                this.handleKeyboard();
+                this.startPerformanceMonitoring();
+                
+                // Add CSS animations
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes fadeInOut {
+                        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                        50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    }
+                    
+                    .canvas-container:fullscreen canvas {
+                        cursor: none;
+                    }
+                    
+                    .mode-btn {
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    
+                    .mode-btn::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: -100%;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                        transition: left 0.5s;
+                    }
+                    
+                    .mode-btn:hover::before {
+                        left: 100%;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // Add tooltips for better UX
+                this.addTooltips();
+            }
+
+            addTooltips() {
+                const tooltips = {
+                    'brushSize': 'Controls the thickness of brush strokes',
+                    'speedSensitivity': 'How much mouse speed affects the art',
+                    'trailLength': 'Length of particle trails',
+                    'colorShiftSpeed': 'Speed of color transitions',
+                    'clearCanvas': 'Clear all artwork (Spacebar)',
+                    'saveImage': 'Save as PNG (Ctrl+S)',
+                    'fullscreenBtn': 'Toggle fullscreen mode (Esc to exit)'
+                };
+
+                Object.entries(tooltips).forEach(([id, text]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.title = text;
+                    }
+                });
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new MouseArtGenerator();
+            app.initAdvancedFeatures();
+            
+            // Add loading animation
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in-out';
+            
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Prevent context menu on canvas
+        document.getElementById('canvas').addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
