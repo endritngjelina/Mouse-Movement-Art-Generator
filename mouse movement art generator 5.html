@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Movement Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 198, 121, 0.2) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 24px;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            position: relative;
+        }
+
+        .logo::before {
+            content: '✨';
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
+            50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px 18px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .control-group:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-group:hover::before {
+            left: 100%;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0.9;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #b0b0b0;
+        }
+
+        select, input[type="range"], input[type="color"] {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="range"]:focus, input[type="color"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
+        }
+
+        select {
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        select option {
+            background: #1a1a1a;
+            color: white;
+            padding: 8px;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+            background: linear-gradient(135deg, #7c6eea 0%, #8a4ba2 100%);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn.secondary:hover {
+            background: linear-gradient(135deg, #5eddd4 0%, #54b09d 100%);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.5);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn.danger:hover {
+            background: linear-gradient(135deg, #ff7b7b 0%, #fe6a62 100%);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            cursor: none;
+            overflow: hidden;
+        }
+
+        .canvas-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #artCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: transparent;
+            transition: filter 0.3s ease;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4ecdc4;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.1s ease;
+            mix-blend-mode: difference;
+        }
+
+        .custom-cursor::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .stats {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(20px) saturate(180%);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 240px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stats:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .stats h3 {
+            margin-bottom: 16px;
+            color: #4ecdc4;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .stat-item span:first-child {
+            color: #b0b0b0;
+            font-weight: 500;
+        }
+
+        .stat-item span:last-child {
+            color: #ffffff;
+            font-weight: 700;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particleFloat 2s ease-out forwards;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0) translateY(-50px);
+            }
+        }
+
+        .mode-indicator {
+            position: fixed;
+            top: 50%;
+            right: 24px;
+            transform: translateY(-50%);
+            background: rgba(20, 20, 20, 0.9);
+            padding: 24px;
+            border-radius: 16px;
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .mode-indicator:hover {
+            transform: translateY(-50%) translateX(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .mode-indicator h3 {
+            color: #ff6b6b;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-list {
+            list-style: none;
+        }
+
+        .mode-list li {
+            padding: 12px 16px;
+            font-size: 14px;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            position: relative;
+            border-left: 3px solid transparent;
+        }
+
+        .mode-list li:hover {
+            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .mode-list li.active {
+            opacity: 1;
+            color: #4ecdc4;
+            font-weight: 600;
+            background: rgba(78, 205, 196, 0.1);
+            border-left-color: #4ecdc4;
+        }
+
+        .mode-list li.active::before {
+            content: '●';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4ecdc4;
+            font-size: 8px;
+        }
+
+        .performance-overlay {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .performance-overlay div {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .performance-overlay div:last-child {
+            margin-bottom: 0;
+        }
+
+        .performance-overlay span {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        @media (max-width: 1024px) {
+            .controls {
+                flex-direction: row;
+                gap: 12px;
+                justify-content: center;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                text-align: center;
+                min-width: 100px;
+            }
+            
+            .mode-indicator {
+                top: auto;
+                bottom: 24px;
+                right: 50%;
+                transform: translateX(50%);
+                width: calc(100% - 48px);
+                max-width: 400px;
+            }
+            
+            .mode-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .mode-list li {
+                flex: 1;
+                text-align: center;
+                font-size: 12px;
+                padding: 8px;
+            }
+            
+            .stats {
+                bottom: 140px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 48px);
+                max-width: 400px;
+            }
+            
+            .performance-overlay {
+                top: auto;
+                bottom: 200px;
+                right: 50%;
+                transform: translateX(50%);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                padding: 16px;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .controls {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .control-group {
+                min-width: 80px;
+                padding: 8px 12px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+            
+            .canvas-container {
+                padding-top: 120px;
+            }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            body {
+                background: #f8f9fa;
+                color: #212529;
+            }
+            
+            body::before {
+                background: 
+                    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 40%, rgba(120, 198, 121, 0.1) 0%, transparent 50%);
+            }
+            
+            .header {
+                background: rgba(248, 249, 250, 0.95);
+                border-bottom-color: rgba(0, 0, 0, 0.08);
+            }
+            
+            .stats, .mode-indicator, .performance-overlay {
+                background: rgba(248, 249, 250, 0.95);
+                color: #212529;
+                border-color: rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .btn {
+                border: 2px solid currentColor;
+            }
+            
+            .control-group {
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        /* Focus indicators for accessibility */
+        .btn:focus-visible,
+        select:focus-visible,
+        input:focus-visible {
+            outline: 3px solid #4ecdc4;
+            outline-offset: 2px;
+        }
+
+        /* Loading animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎨 ArtMotion Studio</div>
+        <div class="controls">
+            <div class="control-group">
+                <label>Mode:</label>
+                <select id="artMode">
+                    <option value="trail">Trail</option>
+                    <option value="spiral">Spiral</option>
+                    <option value="particle">Particle</option>
+                    <option value="geometric">Geometric</option>
+                    <option value="fluid">Fluid</option>
+                    <option value="lightning">Lightning</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Size:</label>
+                <input type="range" id="brushSize" min="1" max="50" value="5">
+            </div>
+            <div class="control-group">
+                <label>Speed:</label>
+                <input type="range" id="speedMultiplier" min="0.1" max="3" step="0.1" value="1">
+            </div>
+            <div class="control-group">
+                <label>Color:</label>
+                <input type="color" id="colorPicker" value="#ff6b6b">
+            </div>
+            <button class="btn danger" onclick="clearCanvas()">Clear</button>
+            <button class="btn secondary" onclick="saveArt()">Save</button>
+            <button class="btn secondary" onclick="toggleAnimation()">Effects</button>()">Animate</button>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="artCanvas"></canvas>
+        <div class="custom-cursor"></div>
+    </div>
+
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="stats">
+        <h3>📊 Statistics</h3>
+        <div class="stat-item">
+            <span>Strokes:</span>
+            <span id="strokeCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span>Distance:</span>
+            <span id="totalDistance">0px</span>
+        </div>
+        <div class="stat-item">
+            <span>Avg Speed:</span>
+            <span id="avgSpeed">0px/s</span>
+        </div>
+        <div class="stat-item">
+            <span>Max Speed:</span>
+            <span id="maxSpeed">0px/s</span>
+        </div>
+        <div class="stat-item">
+            <span>FPS:</span>
+            <span id="fps">60</span>
+        </div>
+    </div>
+
+    <div class="mode-indicator">
+        <h3>🎯 Art Modes</h3>
+        <ul class="mode-list">
+            <li class="active" data-mode="trail">Trail - Follow cursor</li>
+            <li data-mode="spiral">Spiral - Curved patterns</li>
+            <li data-mode="particle">Particle - Explosive effects</li>
+            <li data-mode="geometric">Geometric - Sharp angles</li>
+            <li data-mode="fluid">Fluid - Organic flows</li>
+            <li data-mode="lightning">Lightning - Electric bolts</li>
+        </ul>
+    </div>
+
+    <div class="performance-overlay">
+        <div>Canvas Objects: <span id="objectCount">0</span></div>
+        <div>Memory Usage: <span id="memoryUsage">0MB</span></div>
+    </div>
+
+    <script>
+        class MouseArtGenerator {
+            constructor() {
+                this.canvas = document.getElementById('artCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.customCursor = document.querySelector('.custom-cursor');
+                this.loadingOverlay = document.querySelector('.loading-overlay');
+                this.isDrawing = false;
+                this.lastPos = { x: 0, y: 0 };
+                this.currentPos = { x: 0, y: 0 };
+                this.mouseHistory = [];
+                this.animationId = null;
+                this.particles = [];
+                this.stats = {
+                    strokeCount: 0,
+                    totalDistance: 0,
+                    speeds: [],
+                    maxSpeed: 0,
+                    frameCount: 0,
+                    lastFrameTime: performance.now()
+                };
+                
+                this.init();
+            }
+
+            init() {
+                this.showLoading();
+                setTimeout(() => {
+                    this.resizeCanvas();
+                    this.setupEventListeners();
+                    this.startPerformanceMonitoring();
+                    this.setupCustomCursor();
+                    this.hideLoading();
+                    window.addEventListener('resize', () => this.resizeCanvas());
+                }, 1000);
+            }
+
+            showLoading() {
+                this.loadingOverlay.classList.add('active');
+            }
+
+            hideLoading() {
+                this.loadingOverlay.classList.remove('active');
+            }
+
+            setupCustomCursor() {
+                document.addEventListener('mousemove', (e) => {
+                    if (this.customCursor) {
+                        this.customCursor.style.left = e.clientX - 10 + 'px';
+                        this.customCursor.style.top = e.clientY - 10 + 'px';
+                    }
+                });
+
+                document.addEventListener('mousedown', () => {
+                    if (this.customCursor) {
+                        this.customCursor.style.transform = 'scale(1.5)';
+                        this.customCursor.style.borderColor = '#ff6b6b';
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (this.customCursor) {
+                        this.customCursor.style.transform = 'scale(1)';
+                        this.customCursor.style.borderColor = '#4ecdc4';
+                    }
+                });
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+            }
+
+            setupEventListeners() {
+                // Mouse events
+                this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
+                this.canvas.addEventListener('mousemove', this.draw.bind(this));
+                this.canvas.addEventListener('mouseup', this.stopDrawing.bind(this));
+                this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
+
+                // Touch events for mobile
+                this.canvas.addEventListener('touchstart', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchmove', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
+
+                // Control events
+                document.getElementById('artMode').addEventListener('change', this.updateModeIndicator.bind(this));
+            }
+
+            handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                
+                if (e.type === 'touchstart') {
+                    this.startDrawing(mouseEvent);
+                } else if (e.type === 'touchmove') {
+                    this.draw(mouseEvent);
+                }
+            }
+
+            startDrawing(e) {
+                this.isDrawing = true;
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                this.currentPos = { ...this.lastPos };
+                this.mouseHistory = [this.lastPos];
+                this.stats.strokeCount++;
+            }
+
+            draw(e) {
+                if (!this.isDrawing) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                this.currentPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+
+                // Calculate speed
+                const distance = Math.sqrt(
+                    Math.pow(this.currentPos.x - this.lastPos.x, 2) +
+                    Math.pow(this.currentPos.y - this.lastPos.y, 2)
+                );
+                
+                const speed = distance * parseFloat(document.getElementById('speedMultiplier').value);
+                this.stats.speeds.push(speed);
+                this.stats.totalDistance += distance;
+                this.stats.maxSpeed = Math.max(this.stats.maxSpeed, speed);
+
+                // Add to history
+                this.mouseHistory.push({ ...this.currentPos, speed, distance });
+                if (this.mouseHistory.length > 50) {
+                    this.mouseHistory.shift();
+                }
+
+                // Draw based on selected mode
+                this.drawByMode();
+                this.updateStats();
+
+                this.lastPos = { ...this.currentPos };
+            }
+
+            drawByMode() {
+                const mode = document.getElementById('artMode').value;
+                const size = parseInt(document.getElementById('brushSize').value);
+                const color = document.getElementById('colorPicker').value;
+                const speed = this.mouseHistory[this.mouseHistory.length - 1]?.speed || 0;
+
+                switch (mode) {
+                    case 'trail':
+                        this.drawTrail(size, color, speed);
+                        break;
+                    case 'spiral':
+                        this.drawSpiral(size, color, speed);
+                        break;
+                    case 'particle':
+                        this.drawParticles(size, color, speed);
+                        break;
+                    case 'geometric':
+                        this.drawGeometric(size, color, speed);
+                        break;
+                    case 'fluid':
+                        this.drawFluid(size, color, speed);
+                        break;
+                    case 'lightning':
+                        this.drawLightning(size, color, speed);
+                        break;
+                }
+            }
+
+            drawTrail(size, color, speed) {
+                const opacity = Math.min(speed / 15, 1);
+                const dynamicSize = size + speed / 8;
+                
+                // Create multiple layers for depth
+                for (let layer = 0; layer < 3; layer++) {
+                    const layerSize = dynamicSize * (1 - layer * 0.3);
+                    const layerOpacity = opacity * (1 - layer * 0.4);
+                    
+                    const gradient = this.ctx.createRadialGradient(
+                        this.currentPos.x, this.currentPos.y, 0,
+                        this.currentPos.x, this.currentPos.y, layerSize
+                    );
+                    gradient.addColorStop(0, this.hexToRgba(color, layerOpacity));
+                    gradient.addColorStop(0.7, this.hexToRgba(color, layerOpacity * 0.5));
+                    gradient.addColorStop(1, this.hexToRgba(color, 0));
+
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.currentPos.x, this.currentPos.y, layerSize, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+
+                // Add connecting line between points
+                if (this.mouseHistory.length > 1) {
+                    const prev = this.mouseHistory[this.mouseHistory.length - 2];
+                    this.ctx.strokeStyle = this.hexToRgba(color, opacity * 0.6);
+                    this.ctx.lineWidth = size * 0.3;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(prev.x, prev.y);
+                    this.ctx.lineTo(this.currentPos.x, this.currentPos.y);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawSpiral(size, color, speed) {
+                const history = this.mouseHistory.slice(-10);
+                if (history.length < 2) return;
+
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = size;
+                this.ctx.globalAlpha = 0.7;
+
+                for (let i = 1; i < history.length; i++) {
+                    const angle = (i / history.length) * Math.PI * 2 + speed / 50;
+                    const radius = speed / 10 + 5;
+                    
+                    const spiralX = history[i].x + Math.cos(angle) * radius;
+                    const spiralY = history[i].y + Math.sin(angle) * radius;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(history[i-1].x, history[i-1].y);
+                    this.ctx.lineTo(spiralX, spiralY);
+                    this.ctx.stroke();
+                }
+                this.ctx.globalAlpha = 1;
+            }
+
+            drawParticles(size, color, speed) {
+                const particleCount = Math.floor(speed / 5) + 1;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (Math.PI * 2 * i) / particleCount;
+                    const distance = Math.random() * speed;
+                    const x = this.currentPos.x + Math.cos(angle) * distance;
+                    const y = this.currentPos.y + Math.sin(angle) * distance;
+                    
+                    const particleSize = Math.random() * size;
+                    const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, particleSize);
+                    gradient.addColorStop(0, color);
+                    gradient.addColorStop(1, this.hexToRgba(color, 0));
+
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, particleSize, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
+            drawGeometric(size, color, speed) {
+                const sides = Math.floor(speed / 10) + 3;
+                const radius = size + speed / 5;
+                
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 2;
+                this.ctx.fillStyle = this.hexToRgba(color, 0.3);
+
+                this.ctx.beginPath();
+                for (let i = 0; i <= sides; i++) {
+                    const angle = (i / sides) * Math.PI * 2;
+                    const x = this.currentPos.x + Math.cos(angle) * radius;
+                    const y = this.currentPos.y + Math.sin(angle) * radius;
+                    
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.stroke();
+            }
+
+            drawFluid(size, color, speed) {
+                if (this.mouseHistory.length < 3) return;
+
+                const points = this.mouseHistory.slice(-5);
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = size + speed / 10;
+                this.ctx.globalAlpha = 0.6;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(points[0].x, points[0].y);
+
+                for (let i = 1; i < points.length - 1; i++) {
+                    const cpx = (points[i].x + points[i + 1].x) / 2;
+                    const cpy = (points[i].y + points[i + 1].y) / 2;
+                    this.ctx.quadraticCurveTo(points[i].x, points[i].y, cpx, cpy);
+                }
+
+                this.ctx.stroke();
+                this.ctx.globalAlpha = 1;
+            }
+
+            drawLightning(size, color, speed) {
+                if (this.mouseHistory.length < 2) return;
+
+                const segments = Math.floor(speed / 5) + 3;
+                const variance = speed;
+                
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = size;
+                this.ctx.globalAlpha = 0.8;
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 10;
+
+                const startX = this.lastPos.x;
+                const startY = this.lastPos.y;
+                const endX = this.currentPos.x;
+                const endY = this.currentPos.y;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(startX, startY);
+
+                for (let i = 1; i < segments; i++) {
+                    const progress = i / segments;
+                    const x = startX + (endX - startX) * progress + (Math.random() - 0.5) * variance;
+                    const y = startY + (endY - startY) * progress + (Math.random() - 0.5) * variance;
+                    this.ctx.lineTo(x, y);
+                }
+
+                this.ctx.lineTo(endX, endY);
+                this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
+                this.ctx.globalAlpha = 1;
+            }
+
+            stopDrawing() {
+                this.isDrawing = false;
+                this.mouseHistory = [];
+            }
+
+            updateModeIndicator() {
+                const currentMode = document.getElementById('artMode').value;
+                document.querySelectorAll('.mode-list li').forEach(li => {
+                    li.classList.remove('active');
+                    if (li.dataset.mode === currentMode) {
+                        li.classList.add('active');
+                    }
+                });
+            }
+
+            updateStats() {
+                document.getElementById('strokeCount').textContent = this.stats.strokeCount;
+                document.getElementById('totalDistance').textContent = Math.round(this.stats.totalDistance) + 'px';
+                
+                const avgSpeed = this.stats.speeds.length > 0 
+                    ? this.stats.speeds.reduce((a, b) => a + b, 0) / this.stats.speeds.length 
+                    : 0;
+                document.getElementById('avgSpeed').textContent = Math.round(avgSpeed) + 'px/s';
+                document.getElementById('maxSpeed').textContent = Math.round(this.stats.maxSpeed) + 'px/s';
+            }
+
+            startPerformanceMonitoring() {
+                const updatePerformance = () => {
+                    const now = performance.now();
+                    const delta = now - this.stats.lastFrameTime;
+                    const fps = Math.round(1000 / delta);
+                    
+                    document.getElementById('fps').textContent = fps;
+                    document.getElementById('objectCount').textContent = this.particles.length;
+                    
+                    // Simulate memory usage (in a real app, you'd use performance.memory)
+                    const memoryUsage = Math.round((this.stats.totalDistance / 1000 + this.particles.length / 100) * 10) / 10;
+                    document.getElementById('memoryUsage').textContent = memoryUsage + 'MB';
+                    
+                    this.stats.lastFrameTime = now;
+                    requestAnimationFrame(updatePerformance);
+                };
+                updatePerformance();
+            }
+
+            hexToRgba(hex, alpha) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.particles = [];
+                this.stats = {
+                    strokeCount: 0,
+                    totalDistance: 0,
+                    speeds: [],
+                    maxSpeed: 0,
+                    frameCount: 0,
+                    lastFrameTime: performance.now()
+                };
+                this.updateStats();
+            }
+
+            save() {
+                const link = document.createElement('a');
+                link.download = `mouse-art-${Date.now()}.png`;
+                link.href = this.canvas.toDataURL();
+                link.click();
+            }
+
+            toggleAnimation() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                } else {
+                    this.animate();
+                }
+            }
+
+            animate() {
+                // Add subtle background animation
+                this.ctx.globalAlpha = 0.02;
+                this.ctx.fillStyle = 'black';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.globalAlpha = 1;
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize the application
+        const artGenerator = new MouseArtGenerator();
+
+        // Global functions for button controls
+        function clearCanvas() {
+            // Add confirmation for clearing
+            if (artGenerator.stats.strokeCount > 5) {
+                if (!confirm('Are you sure you want to clear your artwork?')) {
+                    return;
+                }
+            }
+            artGenerator.clear();
+            
+            // Add clear animation
+            const canvas = document.getElementById('artCanvas');
+            canvas.style.filter = 'brightness(0)';
+            setTimeout(() => {
+                canvas.style.filter = '';
+            }, 200);
+        }
+
+        function saveArt() {
+            artGenerator.showLoading();
+            setTimeout(() => {
+                artGenerator.save();
+                artGenerator.hideLoading();
+                
+                // Show success notification
+                showNotification('Artwork saved successfully! 🎨', 'success');
+            }, 500);
+        }
+
+        function toggleAnimation() {
+            artGenerator.toggleAnimation();
+            const btn = event.target;
+            btn.textContent = artGenerator.animationId ? 'Stop Effects' : 'Effects';
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'success' ? '#4ecdc4' : '#ff6b6b'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+                z-index: 10001;
+                opacity: 0;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(-50%) translateY(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(-50%) translateY(-20px)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'c':
+                case 'C':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        clearCanvas();
+                    }
+                    break;
+                case 's':
+                case 'S':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        saveArt();
+                    }
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    toggleAnimation();
+                    break;
+            }
+        });
+
+        // Add visual feedback for interactions
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+
+        // Initialize mode indicator
+        artGenerator.updateModeIndicator();
+
+        console.log('🎨 Mouse Art Generator initialized successfully!');
+        console.log('Keyboard shortcuts: Ctrl+C (clear), Ctrl+S (save), Space (animate)');
+    </script>
+</body>
+</html>
